@@ -21,6 +21,19 @@ pub fn setup_mounts() {
 
     let magisk_tmp = get_magisk_tmp();
 
+    // Make magisk_tmp private
+    unsafe {
+        libc::mount(
+            ptr::null(),
+            magisk_tmp.as_ptr(),
+            ptr::null(),
+            libc::MS_PRIVATE,
+            ptr::null(),
+        )
+        .as_os_err()
+        .log_ok();
+    }
+
     // Mount preinit directory
     let dev_path = FsPathBuf::<64>::new().join(magisk_tmp).join(PREINITDEV);
     let mut linked = false;

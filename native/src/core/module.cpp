@@ -126,7 +126,7 @@ void dir_node::collect_module_files(std::string_view module, int dfd) {
  ************************/
 
 void node_entry::create_and_mount(const char *reason, const string &src, bool ro) {
-    const string dest = isa<tmpfs_node>(parent()) ? worker_path() : node_path();
+    const string dest = isa<tmpfs_node>(parent()) ? upper_path() : node_path();
     if (is_lnk()) {
         VLOGD("cp_link", src.data(), dest.data());
         cp_afc(src.data(), dest.data());
@@ -170,17 +170,24 @@ void tmpfs_node::mount() {
         return;
     }
     if (!isa<tmpfs_node>(parent())) {
+        // Setup upper dir
         auto worker_dir = worker_path();
         mkdirs(worker_dir.data(), 0);
+        auto upper_dir = upper_path();
         clone_attr(exist() ? node_path().data() : parent()->node_path().data(), worker_dir.data());
+        mkdirs(upper_dir.data(), 0);
+        bind_mount("upper", worker_dir.data(), upper_dir.data());
+
+        // Mount files and move
         dir_node::mount();
-        bind_mount(replace() ? "replace" : "move", worker_dir.data(), node_path().data());
+        xmount(upper_dir.data(), node_path().data(), nullptr, MS_MOVE, nullptr);
+        VLOGD("move", upper_dir.data(), node_path().data());
         xmount(nullptr, node_path().data(), nullptr, MS_REMOUNT | MS_BIND | MS_RDONLY, nullptr);
     } else {
-        const string dest = worker_path();
+        const string dest = upper_path();
         // We don't need another layer of tmpfs if parent is tmpfs
         mkdir(dest.data(), 0);
-        clone_attr(exist() ? node_path().data() : parent()->worker_path().data(), dest.data());
+        clone_attr(exist() ? node_path().data() : parent()->upper_path().data(), dest.data());
         dir_node::mount();
     }
 }
@@ -197,7 +204,7 @@ public:
 
     void mount() override {
         if (target) {
-            string dest = isa<tmpfs_node>(parent()) ? worker_path() : node_path();
+            string dest = isa<tmpfs_node>(parent()) ? upper_path() : node_path();
             VLOGD("create", target, dest.data());
             xsymlink(target, dest.data());
         } else {

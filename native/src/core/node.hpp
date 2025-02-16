@@ -43,7 +43,12 @@ public:
 
     // Don't call the following two functions before prepare
     const string &node_path();
-    const string worker_path();
+    string worker_path() {
+        return get_magisk_tmp() + "/"s WORKERDIR + node_path();
+    }
+    string upper_path() {
+        return get_magisk_tmp() + "/"s UPPERDIR + node_path();
+    }
 
     virtual void mount() = 0;
 
@@ -311,8 +316,4 @@ const string &node_entry::node_path() {
     if (_parent && _node_path.empty())
         _node_path = _parent->node_path() + '/' + _name;
     return _node_path;
-}
-
-const string node_entry::worker_path() {
-    return get_magisk_tmp() + "/"s WORKERDIR + node_path();
 }
