@@ -80,3 +80,4 @@ miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.re
 compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 
 [plugins]
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
