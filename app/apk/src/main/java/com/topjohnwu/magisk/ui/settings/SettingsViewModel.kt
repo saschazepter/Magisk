@@ -129,5 +129,4 @@ class SettingsViewModel : BaseViewModel(), BaseSettingsItem.Handler {
             AppContext.toast(R.string.settings_hosts_toast, Toast.LENGTH_SHORT)
         }
     }
-    }
 }
