@@ -15,6 +15,8 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.lifecycle.lifecycleScope
 import com.topjohnwu.magisk.arch.BaseViewModel
 import com.topjohnwu.magisk.arch.VMFactory
+import com.topjohnwu.magisk.arch.ViewEvent
+import com.topjohnwu.magisk.arch.ViewModelHolder
 import com.topjohnwu.magisk.arch.viewModel
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.core.Const
@@ -36,10 +38,10 @@ import com.topjohnwu.magisk.core.R as CoreR
 
 class MainViewModel : BaseViewModel()
 
-class MainActivity : AppCompatActivity(), SplashScreenHost, IActivityExtension {
+class MainActivity : AppCompatActivity(), SplashScreenHost, IActivityExtension, ViewModelHolder {
 
     override val extension = ActivityExtension(this)
-    val viewModel by viewModel<MainViewModel>()
+    override val viewModel by viewModel<MainViewModel>()
     override val splashController = SplashController(this)
 
     private var savedSection: String? = null
@@ -52,6 +54,7 @@ class MainActivity : AppCompatActivity(), SplashScreenHost, IActivityExtension {
         splashController.preOnCreate()
         super.onCreate(savedInstanceState)
         extension.onCreate(savedInstanceState)
+        startObserveLiveData()
         enableEdgeToEdge()
         splashController.onCreate(savedInstanceState)
     }
@@ -85,6 +88,14 @@ class MainActivity : AppCompatActivity(), SplashScreenHost, IActivityExtension {
             }
         }
     }
+
+    override fun onEventDispatched(event: ViewEvent) {}
+
+    fun setDisplayHomeAsUpEnabled(isEnabled: Boolean) {}
+
+    fun requestNavigationHidden(hide: Boolean = true) {}
+
+    fun invalidateToolbar() {}
 
     @SuppressLint("InlinedApi")
     override fun showInvalidStateMessage(): Unit = runOnUiThread {
