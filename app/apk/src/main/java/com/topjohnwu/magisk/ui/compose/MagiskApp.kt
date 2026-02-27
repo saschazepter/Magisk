@@ -35,67 +35,45 @@ fun MagiskApp(initialSection: String? = null) {
     }
 
     var currentScreen by remember { mutableStateOf(initialScreen) }
-    var navBackStack by remember { mutableStateOf(listOf<MainScreen>()) }
-
-    val isRootScreen = currentScreen in listOf(
-        MainScreen.HOME, MainScreen.MODULES, MainScreen.SUPERUSER, MainScreen.LOG
-    )
 
     MagiskTheme {
         Scaffold(
             bottomBar = {
-                if (isRootScreen) {
-                    NavigationBar {
+                NavigationBar {
                         NavigationBarItem(
                             selected = currentScreen == MainScreen.HOME,
-                            onClick = {
-                                currentScreen = MainScreen.HOME
-                                navBackStack = emptyList()
-                            },
+                            onClick = { currentScreen = MainScreen.HOME },
                             icon = Icons.Rounded.Home,
                             label = stringResource(CoreR.string.section_home)
                         )
                         NavigationBarItem(
                             selected = currentScreen == MainScreen.MODULES,
                             enabled = Info.env.isActive,
-                            onClick = {
-                                currentScreen = MainScreen.MODULES
-                                navBackStack = emptyList()
-                            },
+                            onClick = { currentScreen = MainScreen.MODULES },
                             icon = Icons.Rounded.Extension,
                             label = stringResource(CoreR.string.modules)
                         )
                         NavigationBarItem(
                             selected = currentScreen == MainScreen.SUPERUSER,
                             enabled = Info.showSuperUser,
-                            onClick = {
-                                currentScreen = MainScreen.SUPERUSER
-                                navBackStack = emptyList()
-                            },
+                            onClick = { currentScreen = MainScreen.SUPERUSER },
                             icon = Icons.Rounded.Security,
                             label = stringResource(CoreR.string.superuser)
                         )
                         NavigationBarItem(
                             selected = currentScreen == MainScreen.LOG,
-                            onClick = {
-                                currentScreen = MainScreen.LOG
-                                navBackStack = emptyList()
-                            },
+                            onClick = { currentScreen = MainScreen.LOG },
                             icon = Icons.Rounded.BugReport,
                             label = stringResource(CoreR.string.logs)
                         )
                         NavigationBarItem(
                             selected = currentScreen == MainScreen.SETTINGS,
-                            onClick = {
-                                navBackStack = navBackStack + MainScreen.HOME
-                                currentScreen = MainScreen.SETTINGS
-                            },
+                            onClick = { currentScreen = MainScreen.SETTINGS },
                             icon = Icons.Rounded.Settings,
                             label = stringResource(CoreR.string.settings)
                         )
                     }
                 }
-            }
         ) { paddingValues ->
             when (currentScreen) {
                 MainScreen.HOME -> HomeScreen(paddingValues = paddingValues)
