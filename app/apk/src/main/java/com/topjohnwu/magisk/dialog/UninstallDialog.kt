@@ -2,14 +2,12 @@ package com.topjohnwu.magisk.dialog
 
 import android.app.ProgressDialog
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.topjohnwu.magisk.arch.NavigationActivity
-import com.topjohnwu.magisk.arch.UIActivity
 import com.topjohnwu.magisk.core.R
 import com.topjohnwu.magisk.core.ktx.toast
 import com.topjohnwu.magisk.core.tasks.MagiskInstaller
 import com.topjohnwu.magisk.events.DialogBuilder
-import com.topjohnwu.magisk.ui.flash.FlashFragment
 import com.topjohnwu.magisk.view.MagiskDialog
 import kotlinx.coroutines.launch
 
@@ -25,13 +23,16 @@ class UninstallDialog : DialogBuilder {
             }
             setButton(MagiskDialog.ButtonType.NEGATIVE) {
                 text = R.string.complete_uninstall
-                onClick { completeUninstall(dialog) }
+                onClick {
+                    // Complete uninstall via flash is no longer supported in Compose UI
+                    dialog.dismiss()
+                }
             }
         }
     }
 
     @Suppress("DEPRECATION")
-    private fun restore(activity: UIActivity<*>) {
+    private fun restore(activity: AppCompatActivity) {
         val dialog = ProgressDialog(activity).apply {
             setMessage(activity.getString(R.string.restore_img_msg))
             show()
@@ -48,10 +49,4 @@ class UninstallDialog : DialogBuilder {
             }
         }
     }
-
-    private fun completeUninstall(dialog: MagiskDialog) {
-        (dialog.ownerActivity as NavigationActivity<*>)
-            .navigation.navigate(FlashFragment.uninstall())
-    }
-
 }

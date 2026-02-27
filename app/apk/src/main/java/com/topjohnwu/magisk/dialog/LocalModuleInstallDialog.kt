@@ -1,10 +1,9 @@
 package com.topjohnwu.magisk.dialog
 
 import android.net.Uri
-import com.topjohnwu.magisk.MainDirections
-import com.topjohnwu.magisk.core.Const
 import com.topjohnwu.magisk.core.R
 import com.topjohnwu.magisk.events.DialogBuilder
+import com.topjohnwu.magisk.events.SnackbarEvent
 import com.topjohnwu.magisk.ui.module.ModuleViewModel
 import com.topjohnwu.magisk.view.MagiskDialog
 
@@ -20,9 +19,8 @@ class LocalModuleInstallDialog(
             setButton(MagiskDialog.ButtonType.POSITIVE) {
                 text = android.R.string.ok
                 onClick {
-                    viewModel.apply {
-                        MainDirections.actionFlashFragment(Const.Value.FLASH_ZIP, uri).navigate()
-                    }
+                    // Flash screen is no longer available
+                    SnackbarEvent(R.string.install).also { viewModel.run { it.publish() } }
                 }
             }
             setButton(MagiskDialog.ButtonType.NEGATIVE) {

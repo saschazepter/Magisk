@@ -4,14 +4,11 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
-import androidx.databinding.Bindable
-import com.topjohnwu.magisk.BR
-import com.topjohnwu.magisk.R
 import com.topjohnwu.magisk.arch.ActivityExecutor
 import com.topjohnwu.magisk.arch.AsyncLoadViewModel
 import com.topjohnwu.magisk.arch.ContextExecutor
-import com.topjohnwu.magisk.arch.UIActivity
 import com.topjohnwu.magisk.arch.ViewEvent
 import com.topjohnwu.magisk.core.BuildConfig
 import com.topjohnwu.magisk.core.Config
@@ -21,8 +18,6 @@ import com.topjohnwu.magisk.core.download.Subject.App
 import com.topjohnwu.magisk.core.ktx.await
 import com.topjohnwu.magisk.core.ktx.toast
 import com.topjohnwu.magisk.core.repository.NetworkService
-import com.topjohnwu.magisk.databinding.bindExtra
-import com.topjohnwu.magisk.databinding.set
 import com.topjohnwu.magisk.dialog.EnvFixDialog
 import com.topjohnwu.magisk.dialog.ManagerInstallDialog
 import com.topjohnwu.magisk.dialog.UninstallDialog
@@ -41,23 +36,10 @@ class HomeViewModel(
         LOADING, INVALID, OUTDATED, UP_TO_DATE
     }
 
-    val magiskTitleBarrierIds =
-        intArrayOf(R.id.home_magisk_icon, R.id.home_magisk_title, R.id.home_magisk_button)
-    val appTitleBarrierIds =
-        intArrayOf(R.id.home_manager_icon, R.id.home_manager_title, R.id.home_manager_button)
-
-    // StateFlow mirrors for Compose UI
     val appStateFlow = MutableStateFlow(State.LOADING)
     val managerRemoteVersionStrFlow = MutableStateFlow("")
     val stateManagerProgressFlow = MutableStateFlow(0)
     val isNoticeVisibleFlow = MutableStateFlow(Config.safetyNotice)
-
-    @get:Bindable
-    var isNoticeVisible = Config.safetyNotice
-        set(value) {
-            set(value, field, { field = it }, BR.noticeVisible)
-            isNoticeVisibleFlow.value = value
-        }
 
     val magiskState
         get() = when {
@@ -65,13 +47,6 @@ class HomeViewModel(
             !Info.env.isActive -> State.INVALID
             Info.env.versionCode < BuildConfig.APP_VERSION_CODE -> State.OUTDATED
             else -> State.UP_TO_DATE
-        }
-
-    @get:Bindable
-    var appState = State.LOADING
-        set(value) {
-            set(value, field, { field = it }, BR.appState)
-            appStateFlow.value = value
         }
 
     val magiskInstalledVersion
@@ -82,44 +57,27 @@ class HomeViewModel(
                 CoreR.string.not_available.asText()
         }
 
-    @get:Bindable
-    var managerRemoteVersion = CoreR.string.loading.asText()
-        set(value) = set(value, field, { field = it }, BR.managerRemoteVersion)
-
     val managerInstalledVersion
         get() = "${BuildConfig.APP_VERSION_NAME} (${BuildConfig.APP_VERSION_CODE})" +
             if (BuildConfig.DEBUG) " (D)" else ""
-
-    @get:Bindable
-    var stateManagerProgress = 0
-        set(value) {
-            set(value, field, { field = it }, BR.stateManagerProgress)
-            stateManagerProgressFlow.value = value
-        }
-
-    val extraBindings = bindExtra {
-        it.put(BR.viewModel, this)
-    }
 
     companion object {
         private var checkedEnv = false
     }
 
     override suspend fun doLoadWork() {
-        appState = State.LOADING
+        appStateFlow.value = State.LOADING
         Info.fetchUpdate(svc)?.apply {
-            appState = when {
+            appStateFlow.value = when {
                 BuildConfig.APP_VERSION_CODE < versionCode -> State.OUTDATED
                 else -> State.UP_TO_DATE
             }
 
             val isDebug = Config.updateChannel == Config.Value.DEBUG_CHANNEL
             val versionStr = ("$version (${versionCode})" + if (isDebug) " (D)" else "")
-            managerRemoteVersion = versionStr.asText()
             managerRemoteVersionStrFlow.value = versionStr
         } ?: run {
-            appState = State.INVALID
-            managerRemoteVersion = CoreR.string.not_available.asText()
+            appStateFlow.value = State.INVALID
             managerRemoteVersionStrFlow.value = ""
         }
         ensureEnv()
@@ -129,7 +87,7 @@ class HomeViewModel(
 
     fun onProgressUpdate(progress: Float, subject: Subject) {
         if (subject is App)
-            stateManagerProgress = progress.times(100f).roundToInt()
+            stateManagerProgressFlow.value = progress.times(100f).roundToInt()
     }
 
     fun onLinkPressed(link: String) = object : ViewEvent(), ContextExecutor {
@@ -146,7 +104,7 @@ class HomeViewModel(
 
     fun onDeletePressed() = UninstallDialog().show()
 
-    fun onManagerPressed() = when (appState) {
+    fun onManagerPressed() = when (appStateFlow.value) {
         State.LOADING -> SnackbarEvent(CoreR.string.loading).publish()
         State.INVALID -> SnackbarEvent(CoreR.string.no_connection).publish()
         else -> withExternalRW {
@@ -157,12 +115,12 @@ class HomeViewModel(
     }
 
     fun onMagiskPressed() = withExternalRW {
-        HomeFragmentDirections.actionHomeFragmentToInstallFragment().navigate()
+        SnackbarEvent(CoreR.string.install).publish()
     }
 
     fun hideNotice() {
         Config.safetyNotice = false
-        isNoticeVisible = false
+        isNoticeVisibleFlow.value = false
     }
 
     private suspend fun ensureEnv() {
@@ -177,7 +135,7 @@ class HomeViewModel(
 
     val showTest = false
     fun onTestPressed() = object : ViewEvent(), ActivityExecutor {
-        override fun invoke(activity: UIActivity<*>) {
+        override fun invoke(activity: AppCompatActivity) {
             /* Entry point to trigger test events within the app */
         }
     }.publish()

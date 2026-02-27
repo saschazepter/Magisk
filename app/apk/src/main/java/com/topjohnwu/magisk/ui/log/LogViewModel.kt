@@ -1,9 +1,7 @@
 package com.topjohnwu.magisk.ui.log
 
 import android.system.Os
-import androidx.databinding.Bindable
 import androidx.lifecycle.viewModelScope
-import com.topjohnwu.magisk.BR
 import com.topjohnwu.magisk.arch.AsyncLoadViewModel
 import com.topjohnwu.magisk.core.BuildConfig
 import com.topjohnwu.magisk.core.Info
@@ -13,11 +11,7 @@ import com.topjohnwu.magisk.core.ktx.toTime
 import com.topjohnwu.magisk.core.repository.LogRepository
 import com.topjohnwu.magisk.core.utils.MediaStoreUtils
 import com.topjohnwu.magisk.core.utils.MediaStoreUtils.outputStream
-import com.topjohnwu.magisk.databinding.bindExtra
-import com.topjohnwu.magisk.databinding.diffList
-import com.topjohnwu.magisk.databinding.set
 import com.topjohnwu.magisk.events.SnackbarEvent
-import com.topjohnwu.magisk.view.TextItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -27,53 +21,25 @@ import java.io.FileInputStream
 class LogViewModel(
     private val repo: LogRepository
 ) : AsyncLoadViewModel() {
-    @get:Bindable
-    var loading = true
-        private set(value) {
-            set(value, field, { field = it }, BR.loading)
-            loadingFlow.value = value
-        }
 
-    // StateFlow mirrors for Compose UI
     val loadingFlow = MutableStateFlow(true)
     val suLogsFlow = MutableStateFlow<List<SuLogRvItem>>(emptyList())
     val magiskLogsFlow = MutableStateFlow<List<String>>(emptyList())
 
-    // --- empty view
-
-    val itemEmpty = TextItem(R.string.log_data_none)
-    val itemMagiskEmpty = TextItem(R.string.log_data_magisk_none)
-
-    // --- su log
-
-    val items = diffList<SuLogRvItem>()
-    val extraBindings = bindExtra {
-        it.put(BR.viewModel, this)
-    }
-
-    // --- magisk log
-    val logs = diffList<LogRvItem>()
     var magiskLogRaw = " "
 
     override suspend fun doLoadWork() {
-        loading = true
+        loadingFlow.value = true
 
-        val (suLogs, suDiff) = withContext(Dispatchers.Default) {
+        val suLogs = withContext(Dispatchers.Default) {
             magiskLogRaw = repo.fetchMagiskLogs()
-            val newLogs = magiskLogRaw.split('\n').map { LogRvItem(it) }
-            logs.update(newLogs)
             val suLogs = repo.fetchSuLogs().map { SuLogRvItem(it) }
-            suLogs to items.calculateDiff(suLogs)
+            suLogs
         }
 
-        items.firstOrNull()?.isTop = false
-        items.lastOrNull()?.isBottom = false
-        items.update(suLogs, suDiff)
-        items.firstOrNull()?.isTop = true
-        items.lastOrNull()?.isBottom = true
-        suLogsFlow.value = ArrayList(suLogs)
+        suLogsFlow.value = suLogs
         magiskLogsFlow.value = magiskLogRaw.split('\n')
-        loading = false
+        loadingFlow.value = false
     }
 
     fun saveMagiskLog() = withExternalRW {

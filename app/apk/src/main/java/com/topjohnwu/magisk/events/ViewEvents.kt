@@ -3,14 +3,13 @@ package com.topjohnwu.magisk.events
 import android.content.Context
 import android.view.View
 import androidx.annotation.StringRes
-import androidx.navigation.NavDirections
+import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.snackbar.Snackbar
 import com.topjohnwu.magisk.arch.ActivityExecutor
 import com.topjohnwu.magisk.arch.ContextExecutor
-import com.topjohnwu.magisk.arch.NavigationActivity
-import com.topjohnwu.magisk.arch.UIActivity
 import com.topjohnwu.magisk.arch.ViewEvent
 import com.topjohnwu.magisk.core.base.ContentResultCallback
+import com.topjohnwu.magisk.core.base.IActivityExtension
 import com.topjohnwu.magisk.core.base.relaunch
 import com.topjohnwu.magisk.utils.TextHolder
 import com.topjohnwu.magisk.utils.asText
@@ -22,32 +21,24 @@ class PermissionEvent(
     private val callback: (Boolean) -> Unit
 ) : ViewEvent(), ActivityExecutor {
 
-    override fun invoke(activity: UIActivity<*>) =
-        activity.withPermission(permission, callback)
+    override fun invoke(activity: AppCompatActivity) =
+        (activity as IActivityExtension).withPermission(permission, callback)
 }
 
 class BackPressEvent : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
+    override fun invoke(activity: AppCompatActivity) {
         activity.onBackPressed()
     }
 }
 
 class DieEvent : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
+    override fun invoke(activity: AppCompatActivity) {
         activity.finish()
     }
 }
 
-class ShowUIEvent(private val delegate: View.AccessibilityDelegate?)
-    : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
-        activity.setContentView()
-        activity.setAccessibilityDelegate(delegate)
-    }
-}
-
 class RecreateEvent : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
+    override fun invoke(activity: AppCompatActivity) {
         activity.relaunch()
     }
 }
@@ -56,8 +47,8 @@ class AuthEvent(
     private val callback: () -> Unit
 ) : ViewEvent(), ActivityExecutor {
 
-    override fun invoke(activity: UIActivity<*>) {
-        activity.withAuthentication { if (it) callback() }
+    override fun invoke(activity: AppCompatActivity) {
+        (activity as IActivityExtension).withAuthentication { if (it) callback() }
     }
 }
 
@@ -65,20 +56,8 @@ class GetContentEvent(
     private val type: String,
     private val callback: ContentResultCallback
 ) : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
-        activity.getContent(type, callback)
-    }
-}
-
-class NavigationEvent(
-    private val directions: NavDirections,
-    private val pop: Boolean
-) : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
-        (activity as? NavigationActivity<*>)?.apply {
-            if (pop) navigation.popBackStack()
-            directions.navigate()
-        }
+    override fun invoke(activity: AppCompatActivity) {
+        (activity as IActivityExtension).getContent(type, callback)
     }
 }
 
@@ -106,15 +85,16 @@ class SnackbarEvent(
         builder: Snackbar.() -> Unit = {}
     ) : this(msg.asText(), length, builder)
 
-    override fun invoke(activity: UIActivity<*>) {
-        activity.showSnackbar(msg.getText(activity.resources), length, builder)
+    override fun invoke(activity: AppCompatActivity) {
+        val view = activity.window.decorView.rootView
+        Snackbar.make(view, msg.getText(activity.resources), length).apply(builder).show()
     }
 }
 
 class DialogEvent(
     private val builder: DialogBuilder
 ) : ViewEvent(), ActivityExecutor {
-    override fun invoke(activity: UIActivity<*>) {
+    override fun invoke(activity: AppCompatActivity) {
         MagiskDialog(activity).apply(builder::build).show()
     }
 }

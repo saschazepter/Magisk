@@ -14,9 +14,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityNodeProvider
 import android.widget.Toast
-import androidx.databinding.Bindable
 import androidx.lifecycle.viewModelScope
-import com.topjohnwu.magisk.BR
 import com.topjohnwu.magisk.arch.BaseViewModel
 import com.topjohnwu.magisk.core.AppContext
 import com.topjohnwu.magisk.core.Config
@@ -27,12 +25,10 @@ import com.topjohnwu.magisk.core.ktx.toast
 import com.topjohnwu.magisk.core.model.su.SuPolicy.Companion.ALLOW
 import com.topjohnwu.magisk.core.model.su.SuPolicy.Companion.DENY
 import com.topjohnwu.magisk.core.su.SuRequestHandler
-import com.topjohnwu.magisk.databinding.set
 import com.topjohnwu.magisk.events.AuthEvent
 import com.topjohnwu.magisk.events.DieEvent
-import com.topjohnwu.magisk.events.ShowUIEvent
-import com.topjohnwu.magisk.utils.TextHolder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit.SECONDS
 
@@ -45,20 +41,13 @@ class SuRequestViewModel(
     lateinit var title: String
     lateinit var packageName: String
 
-    @get:Bindable
-    val denyText = DenyText()
-
-    @get:Bindable
-    var selectedItemPosition = 0
-        set(value) = set(value, field, { field = it }, BR.selectedItemPosition)
-
-    @get:Bindable
-    var grantEnabled = false
-        set(value) = set(value, field, { field = it }, BR.grantEnabled)
+    val denyTextFlow = MutableStateFlow("")
+    val selectedItemPositionFlow = MutableStateFlow(0)
+    val grantEnabledFlow = MutableStateFlow(false)
+    val showDialogFlow = MutableStateFlow(false)
 
     @SuppressLint("ClickableViewAccessibility")
     val grantTouchListener = View.OnTouchListener { _: View, event: MotionEvent ->
-        // Filter obscured touches by consuming them.
         if (event.flags and MotionEvent.FLAG_WINDOW_IS_OBSCURED != 0
             || event.flags and MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED != 0) {
             if (event.action == MotionEvent.ACTION_UP) {
@@ -107,8 +96,6 @@ class SuRequestViewModel(
         val app = info.applicationInfo
 
         if (app == null) {
-            // The request is not coming from an app process, and the UID is a
-            // shared UID. We have no way to know where this request comes from.
             icon = pm.defaultActivityIcon
             title = "[SharedUID] ${info.sharedUserId}"
             packageName = info.sharedUserId.toString()
@@ -119,37 +106,38 @@ class SuRequestViewModel(
             packageName = info.packageName
         }
 
-        selectedItemPosition = timeoutPrefs.getInt(packageName, 0)
+        selectedItemPositionFlow.value = timeoutPrefs.getInt(packageName, 0)
 
-        // Set timer
         timer.start()
-
-        // Actually show the UI
-        ShowUIEvent(if (Config.suTapjack) EmptyAccessibilityDelegate else null).publish()
+        showDialogFlow.value = true
         initialized = true
     }
 
     private fun respond(action: Int) {
-        if (!initialized) {
-            // ignore the response until showDialog done
-            return
-        }
+        if (!initialized) return
 
         timer.cancel()
 
-        val pos = selectedItemPosition
+        val pos = selectedItemPositionFlow.value
         timeoutPrefs.edit().putInt(packageName, pos).apply()
 
         viewModelScope.launch {
             handler.respond(action, Config.Value.TIMEOUT_LIST[pos])
-            // Kill activity after response
             DieEvent().publish()
         }
     }
 
     private fun cancelTimer() {
         timer.cancel()
-        denyText.seconds = 0
+        updateDenyText(0)
+    }
+
+    private fun updateDenyText(seconds: Int) {
+        val resources = AppContext.resources
+        denyTextFlow.value = if (seconds != 0)
+            "${resources.getString(R.string.deny)} ($seconds)"
+        else
+            resources.getString(R.string.deny)
     }
 
     private inner class SuTimer(
@@ -158,28 +146,15 @@ class SuRequestViewModel(
     ) : CountDownTimer(millis, interval) {
 
         override fun onTick(remains: Long) {
-            if (!grantEnabled && remains <= millis - 1000) {
-                grantEnabled = true
+            if (!grantEnabledFlow.value && remains <= millis - 1000) {
+                grantEnabledFlow.value = true
             }
-            denyText.seconds = (remains / 1000).toInt() + 1
+            updateDenyText((remains / 1000).toInt() + 1)
         }
 
         override fun onFinish() {
-            denyText.seconds = 0
+            updateDenyText(0)
             respond(DENY)
-        }
-
-    }
-
-    inner class DenyText : TextHolder() {
-        var seconds = 0
-            set(value) = set(value, field, { field = it }, BR.denyText)
-
-        override fun getText(resources: Resources): CharSequence {
-            return if (seconds != 0)
-                "${resources.getString(R.string.deny)} ($seconds)"
-            else
-                resources.getString(R.string.deny)
         }
     }
 

@@ -1,22 +1,12 @@
 package com.topjohnwu.magisk.ui.module
 
 import android.net.Uri
-import androidx.databinding.Bindable
 import androidx.lifecycle.MutableLiveData
-import com.topjohnwu.magisk.BR
-import com.topjohnwu.magisk.MainDirections
-import com.topjohnwu.magisk.R
 import com.topjohnwu.magisk.arch.AsyncLoadViewModel
-import com.topjohnwu.magisk.core.Const
 import com.topjohnwu.magisk.core.Info
 import com.topjohnwu.magisk.core.base.ContentResultCallback
 import com.topjohnwu.magisk.core.model.module.LocalModule
 import com.topjohnwu.magisk.core.model.module.OnlineModule
-import com.topjohnwu.magisk.databinding.MergeObservableList
-import com.topjohnwu.magisk.databinding.RvItem
-import com.topjohnwu.magisk.databinding.bindExtra
-import com.topjohnwu.magisk.databinding.diffList
-import com.topjohnwu.magisk.databinding.set
 import com.topjohnwu.magisk.dialog.LocalModuleInstallDialog
 import com.topjohnwu.magisk.dialog.OnlineModuleInstallDialog
 import com.topjohnwu.magisk.events.GetContentEvent
@@ -29,59 +19,25 @@ import com.topjohnwu.magisk.core.R as CoreR
 
 class ModuleViewModel : AsyncLoadViewModel() {
 
-    val bottomBarBarrierIds = intArrayOf(R.id.module_update, R.id.module_remove)
-
-    private val itemsInstalled = diffList<LocalModuleRvItem>()
-
-    val items = MergeObservableList<RvItem>()
-    val extraBindings = bindExtra {
-        it.put(BR.viewModel, this)
-    }
-
-    val data get() = uri
-
-    // StateFlow mirrors for Compose UI
     val loadingFlow = MutableStateFlow(true)
     val installedModulesFlow = MutableStateFlow<List<LocalModule>>(emptyList())
 
-    @get:Bindable
-    var loading = true
-        private set(value) {
-            set(value, field, { field = it }, BR.loading)
-            loadingFlow.value = value
-        }
-
     override suspend fun doLoadWork() {
-        loading = true
+        loadingFlow.value = true
         val moduleLoaded = Info.env.isActive &&
                 withContext(Dispatchers.IO) { LocalModule.loaded() }
         if (moduleLoaded) {
             loadInstalled()
-            if (items.isEmpty()) {
-                items.insertItem(InstallModule)
-                    .insertList(itemsInstalled)
-            }
         }
-        loading = false
-        loadUpdateInfo()
+        loadingFlow.value = false
     }
 
     override fun onNetworkChanged(network: Boolean) = startLoading()
 
     private suspend fun loadInstalled() {
         withContext(Dispatchers.Default) {
-            val installed = LocalModule.installed().map { LocalModuleRvItem(it) }
-            itemsInstalled.update(installed)
-            installedModulesFlow.value = installed.map { it.item }
-        }
-    }
-
-    private suspend fun loadUpdateInfo() {
-        withContext(Dispatchers.IO) {
-            itemsInstalled.forEach {
-                if (it.item.fetch())
-                    it.fetchedUpdateInfo()
-            }
+            val installed = LocalModule.installed()
+            installedModulesFlow.value = installed
         }
     }
 
@@ -108,7 +64,7 @@ class ModuleViewModel : AsyncLoadViewModel() {
     }
 
     fun runAction(id: String, name: String) {
-        MainDirections.actionActionFragment(id, name).navigate()
+        // TODO: implement action screen navigation
     }
 
     companion object {

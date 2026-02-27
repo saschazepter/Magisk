@@ -1,9 +1,9 @@
 package com.topjohnwu.magisk.dialog
 
 import android.app.Activity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.topjohnwu.magisk.R
-import com.topjohnwu.magisk.arch.UIActivity
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.events.DialogBuilder
 import com.topjohnwu.magisk.view.MagiskDialog
@@ -36,6 +36,6 @@ class DarkThemeDialog : DialogBuilder {
 
     private fun selectTheme(mode: Int, activity: Activity) {
         Config.darkTheme = mode
-        (activity as UIActivity<*>).delegate.localNightMode = mode
+        (activity as AppCompatActivity).delegate.localNightMode = mode
     }
 }
