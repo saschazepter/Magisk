@@ -15,15 +15,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.topjohnwu.magisk.arch.VMFactory
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.core.Const
 import com.topjohnwu.magisk.core.Info
-import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.extra.SuperSwitch
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.topjohnwu.magisk.core.R as CoreR
 
 @Composable
@@ -41,7 +44,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- Customization ---
-        SmallTitle(text = stringResource(CoreR.string.settings_customization))
+        SectionTitle(stringResource(CoreR.string.settings_customization))
 
         SuperArrow(
             title = stringResource(CoreR.string.section_theme),
@@ -51,7 +54,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         // --- App Settings ---
-        SmallTitle(text = stringResource(CoreR.string.home_app_title))
+        SectionTitle(stringResource(CoreR.string.home_app_title))
 
         var checkUpdate by remember { mutableStateOf(Config.checkUpdate) }
         SuperSwitch(
@@ -90,7 +93,7 @@ fun SettingsScreen(
 
         // --- Magisk ---
         if (Info.env.isActive) {
-            SmallTitle(text = stringResource(CoreR.string.magisk))
+            SectionTitle(stringResource(CoreR.string.magisk))
 
             SuperArrow(
                 title = stringResource(CoreR.string.settings_hosts_title),
@@ -103,7 +106,7 @@ fun SettingsScreen(
                 SuperSwitch(
                     title = stringResource(CoreR.string.zygisk),
                     summary = stringResource(
-                        if (Zygisk.mismatch) CoreR.string.reboot_apply_change
+                        if (Config.zygisk != Info.isZygiskEnabled) CoreR.string.reboot_apply_change
                         else CoreR.string.settings_zygisk_summary
                     ),
                     checked = zygisk,
@@ -120,7 +123,7 @@ fun SettingsScreen(
                     checked = denyListEnabled,
                     onCheckedChange = { checked ->
                         denyListEnabled = checked
-                        DenyList.value = checked
+                        Config.denyList = checked
                     }
                 )
 
@@ -136,7 +139,7 @@ fun SettingsScreen(
 
         // --- Superuser ---
         if (Info.showSuperUser) {
-            SmallTitle(text = stringResource(CoreR.string.superuser))
+            SectionTitle(stringResource(CoreR.string.superuser))
 
             var suAuth by remember { mutableStateOf(Config.suAuth) }
             SuperSwitch(
@@ -158,4 +161,15 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.padding(start = 28.dp, top = 8.dp, bottom = 4.dp, end = 16.dp),
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium
+    )
 }

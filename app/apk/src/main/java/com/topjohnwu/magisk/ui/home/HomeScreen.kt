@@ -22,14 +22,12 @@ import com.topjohnwu.magisk.core.Info
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.extra.SuperArrow
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.topjohnwu.magisk.core.R as CoreR
 
 @Composable
 fun HomeScreen(
     paddingValues: PaddingValues,
-    onNavigateToSettings: () -> Unit,
     vm: HomeViewModel = viewModel(factory = VMFactory)
 ) {
     val appState by vm.appStateFlow.collectAsStateWithLifecycle()
@@ -139,11 +137,6 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        SuperArrow(
-            title = stringResource(CoreR.string.settings),
-            onClick = onNavigateToSettings
-        )
 
         Spacer(modifier = Modifier.height(16.dp))
     }
