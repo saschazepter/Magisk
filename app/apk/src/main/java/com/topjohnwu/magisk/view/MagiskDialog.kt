@@ -164,7 +164,7 @@ class MagiskDialog(
     }
 
     fun setIcon(@DrawableRes drawableRes: Int) {
-        setIcon(AppCompatResources.getDrawable(context, drawableRes)!!)
+        AppCompatResources.getDrawable(context, drawableRes)?.let { setIcon(it) }
     }
 
     fun setIcon(drawable: Drawable) {
