@@ -22,6 +22,7 @@ import com.topjohnwu.magisk.dialog.OnlineModuleInstallDialog
 import com.topjohnwu.magisk.events.GetContentEvent
 import com.topjohnwu.magisk.events.SnackbarEvent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
 import com.topjohnwu.magisk.core.R as CoreR
@@ -39,9 +40,16 @@ class ModuleViewModel : AsyncLoadViewModel() {
 
     val data get() = uri
 
+    // StateFlow mirrors for Compose UI
+    val loadingFlow = MutableStateFlow(true)
+    val installedModulesFlow = MutableStateFlow<List<LocalModule>>(emptyList())
+
     @get:Bindable
     var loading = true
-        private set(value) = set(value, field, { field = it }, BR.loading)
+        private set(value) {
+            set(value, field, { field = it }, BR.loading)
+            loadingFlow.value = value
+        }
 
     override suspend fun doLoadWork() {
         loading = true
@@ -64,6 +72,7 @@ class ModuleViewModel : AsyncLoadViewModel() {
         withContext(Dispatchers.Default) {
             val installed = LocalModule.installed().map { LocalModuleRvItem(it) }
             itemsInstalled.update(installed)
+            installedModulesFlow.value = installed.map { it.item }
         }
     }
 

@@ -19,6 +19,7 @@ import com.topjohnwu.magisk.databinding.set
 import com.topjohnwu.magisk.events.SnackbarEvent
 import com.topjohnwu.magisk.view.TextItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
@@ -28,7 +29,15 @@ class LogViewModel(
 ) : AsyncLoadViewModel() {
     @get:Bindable
     var loading = true
-        private set(value) = set(value, field, { field = it }, BR.loading)
+        private set(value) {
+            set(value, field, { field = it }, BR.loading)
+            loadingFlow.value = value
+        }
+
+    // StateFlow mirrors for Compose UI
+    val loadingFlow = MutableStateFlow(true)
+    val suLogsFlow = MutableStateFlow<List<SuLogRvItem>>(emptyList())
+    val magiskLogsFlow = MutableStateFlow<List<String>>(emptyList())
 
     // --- empty view
 
@@ -62,6 +71,8 @@ class LogViewModel(
         items.update(suLogs, suDiff)
         items.firstOrNull()?.isTop = true
         items.lastOrNull()?.isBottom = true
+        suLogsFlow.value = ArrayList(suLogs)
+        magiskLogsFlow.value = magiskLogRaw.split('\n')
         loading = false
     }
 

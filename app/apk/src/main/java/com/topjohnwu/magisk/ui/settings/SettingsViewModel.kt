@@ -123,10 +123,11 @@ class SettingsViewModel : BaseViewModel(), BaseSettingsItem.Handler {
         }
     }
 
-    private fun createHosts() {
+    internal fun createHosts() {
         viewModelScope.launch {
             RootUtils.addSystemlessHosts()
             AppContext.toast(R.string.settings_hosts_toast, Toast.LENGTH_SHORT)
         }
+    }
     }
 }

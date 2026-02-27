@@ -29,6 +29,7 @@ import com.topjohnwu.magisk.dialog.UninstallDialog
 import com.topjohnwu.magisk.events.SnackbarEvent
 import com.topjohnwu.magisk.utils.asText
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.roundToInt
 import com.topjohnwu.magisk.core.R as CoreR
 
@@ -45,9 +46,18 @@ class HomeViewModel(
     val appTitleBarrierIds =
         intArrayOf(R.id.home_manager_icon, R.id.home_manager_title, R.id.home_manager_button)
 
+    // StateFlow mirrors for Compose UI
+    val appStateFlow = MutableStateFlow(State.LOADING)
+    val managerRemoteVersionStrFlow = MutableStateFlow("")
+    val stateManagerProgressFlow = MutableStateFlow(0)
+    val isNoticeVisibleFlow = MutableStateFlow(Config.safetyNotice)
+
     @get:Bindable
     var isNoticeVisible = Config.safetyNotice
-        set(value) = set(value, field, { field = it }, BR.noticeVisible)
+        set(value) {
+            set(value, field, { field = it }, BR.noticeVisible)
+            isNoticeVisibleFlow.value = value
+        }
 
     val magiskState
         get() = when {
@@ -59,7 +69,10 @@ class HomeViewModel(
 
     @get:Bindable
     var appState = State.LOADING
-        set(value) = set(value, field, { field = it }, BR.appState)
+        set(value) {
+            set(value, field, { field = it }, BR.appState)
+            appStateFlow.value = value
+        }
 
     val magiskInstalledVersion
         get() = Info.env.run {
@@ -79,7 +92,10 @@ class HomeViewModel(
 
     @get:Bindable
     var stateManagerProgress = 0
-        set(value) = set(value, field, { field = it }, BR.stateManagerProgress)
+        set(value) {
+            set(value, field, { field = it }, BR.stateManagerProgress)
+            stateManagerProgressFlow.value = value
+        }
 
     val extraBindings = bindExtra {
         it.put(BR.viewModel, this)
@@ -98,11 +114,13 @@ class HomeViewModel(
             }
 
             val isDebug = Config.updateChannel == Config.Value.DEBUG_CHANNEL
-            managerRemoteVersion =
-                ("$version (${versionCode})" + if (isDebug) " (D)" else "").asText()
+            val versionStr = ("$version (${versionCode})" + if (isDebug) " (D)" else "")
+            managerRemoteVersion = versionStr.asText()
+            managerRemoteVersionStrFlow.value = versionStr
         } ?: run {
             appState = State.INVALID
             managerRemoteVersion = CoreR.string.not_available.asText()
+            managerRemoteVersionStrFlow.value = ""
         }
         ensureEnv()
     }

@@ -27,6 +27,7 @@ import com.topjohnwu.magisk.events.SnackbarEvent
 import com.topjohnwu.magisk.utils.asText
 import com.topjohnwu.magisk.view.TextItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -47,9 +48,16 @@ class SuperuserViewModel(
         it.put(BR.listener, this)
     }
 
+    // StateFlow mirrors for Compose UI
+    val loadingFlow = MutableStateFlow(true)
+    val policiesFlow = MutableStateFlow<List<PolicyRvItem>>(emptyList())
+
     @get:Bindable
     var loading = true
-        private set(value) = set(value, field, { field = it }, BR.loading)
+        private set(value) {
+            set(value, field, { field = it }, BR.loading)
+            loadingFlow.value = value
+        }
 
     @SuppressLint("InlinedApi")
     override suspend fun doLoadWork() {
@@ -96,6 +104,7 @@ class SuperuserViewModel(
                 { it.packageName }
             ))
             itemsPolicies.update(policies)
+            policiesFlow.value = ArrayList(policies)
         }
         if (itemsPolicies.isNotEmpty())
             itemsHelpers.clear()
