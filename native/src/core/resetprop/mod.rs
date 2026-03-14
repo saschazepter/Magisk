@@ -82,6 +82,8 @@ unsafe extern "C" {
     fn sys_prop_delete(key: CharPtr, prune: bool) -> i32;
     #[link_name = "__system_property_get_context"]
     fn sys_prop_get_context(key: CharPtr) -> CharPtr;
+    #[link_name = "__system_property_compact"]
+    fn sys_prop_compact() -> bool;
     #[link_name = "__system_property_area_serial2"]
     fn sys_prop_area_serial() -> u32;
 }
@@ -173,6 +175,10 @@ impl SysProp {
 
     fn get_context(&self, key: &Utf8CStr) -> &'static Utf8CStr {
         unsafe { Utf8CStr::from_ptr_unchecked(sys_prop_get_context(key.as_ptr())) }
+    }
+
+    fn compact(&self) -> bool {
+        unsafe { sys_prop_compact() }
     }
 
     fn area_serial(&self) -> u32 {
