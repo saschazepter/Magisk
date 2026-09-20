@@ -17,7 +17,6 @@ static vector<string> rc_list;
 
 static bool unxz(int fd, rust::Slice<const uint8_t> bytes) {
     uint8_t out[8192];
-    xz_crc32_init();
     size_t size = bytes.size();
     struct xz_dec *dec = xz_dec_init(XZ_DYNALLOC, 1 << 26);
     run_finally finally([&] { xz_dec_end(dec); });
